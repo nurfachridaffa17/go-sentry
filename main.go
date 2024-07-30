@@ -73,6 +73,26 @@ func main() {
 		return err
 	})
 
+	// Endpoint untuk menguji recovery
+	app.GET("/test-recovery", func(ctx echo.Context) error {
+		// Buat error yang bisa ditangkap oleh Sentry
+		err := fmt.Errorf("this is a test error to check Sentry integration")
+		return ctx.String(http.StatusInternalServerError, err.Error())
+	})
+
+	// Endpoint untuk menguji timeout
+	app.GET("/test-timeout", func(ctx echo.Context) error {
+		// Buat timeout yang bisa ditangkap oleh Sentry
+		time.Sleep(3 * time.Second)
+		if hub := sentryecho.GetHubFromContext(ctx); hub != nil {
+			hub.WithScope(func(scope *sentry.Scope) {
+				scope.SetExtra("endpoint", "/test-timeout")
+				hub.CaptureMessage("Test timeout")
+			})
+		}
+		return ctx.String(http.StatusOK, "Hello, World!")
+	})
+
 	// Endpoint untuk menguji panic
 	app.GET("/test-panic", func(ctx echo.Context) error {
 		// Buat panic yang bisa ditangkap oleh Sentry
